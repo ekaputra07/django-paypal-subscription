@@ -145,7 +145,7 @@ class SubscriptionDetail(TemplateView):
             extra_args = {}
             get_paypal_extra_args.send(sender=None, user=request.user, subscription=s, extra_args={})
             form = _paypal_form(s, request.user,
-                                upgrade_subscription=(us is not None) and (us.subscription<>s))
+                                upgrade_subscription=(us is not None) and (us.subscription!=s))
 
         try:
             s_us = request.user.usersubscription_set.get(subscription=s)
