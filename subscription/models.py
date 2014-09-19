@@ -10,6 +10,7 @@ from django.db.models.signals import class_prepared
 
 import paypal.standard.ipn.models as ipn_models
 import paypal.standard.ipn.signals as ipn_signals
+import paypal_form
 
 import signals
 import utils
@@ -114,6 +115,14 @@ class Subscription(models.Model):
                              }
         else:
             return _("No trial")
+
+    def get_paypal_form(self, user, usersubscription):
+        us = usersubscription
+        extra_args = {}
+        paypal_form.get_paypal_extra_args.send(sender=None, user=user,
+                                               subscription=self, extra_args={})
+        return paypal_form._paypal_form(self, user,
+                            upgrade_subscription=(us is not None) and (us.subscription!=s))
 
 
 class ActiveUSManager(models.Manager):
