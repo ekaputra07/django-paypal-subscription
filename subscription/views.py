@@ -19,7 +19,12 @@ class SubscriptionList(TemplateView):
     template_name = 'subscription_list.html'
 
     def get_context_data(self, **kwargs):
-        return dict(object_list = Subscription.objects.all())
+        u = self.request.user
+        subscriptions = list(Subscription.objects.all())
+        forms = list(s.get_paypal_form(u) for s in subscriptions)
+
+        return dict(object_list=subscriptions,
+                    paypal_forms=zip(subscriptions, forms))
 
 
 class SubscriptionDetail(TemplateView):
@@ -68,7 +73,7 @@ class SubscriptionDetail(TemplateView):
         if change_denied_reasons:
             form = None
         else:
-            form = s.get_paypal_form(request.user, us)
+            form = s.get_paypal_form(request.user)
         try:
             s_us = request.user.usersubscription_set.get(subscription=s)
         except UserSubscription.DoesNotExist:
