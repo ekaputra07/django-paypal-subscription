@@ -116,8 +116,11 @@ class Subscription(models.Model):
         else:
             return _("No trial")
 
-    def get_paypal_form(self, user, usersubscription):
-        us = usersubscription
+    def get_paypal_form(self, user):
+        try:
+            us = user.usersubscription_set.get(active=True)
+        except UserSubscription.DoesNotExist:
+            us = None
         extra_args = {}
         paypal_form.get_paypal_extra_args.send(sender=None, user=user,
                                                subscription=self, extra_args={})
