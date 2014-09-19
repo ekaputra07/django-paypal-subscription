@@ -8,8 +8,8 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
-from django.views.generic.list_detail import object_list
-from django.views.generic.simple import direct_to_template
+from django.views.generic.list import ListView
+from django.views.generic.base import TemplateView
 from django.dispatch import Signal
 
 _formclass = getattr(settings, 'SUBSCRIPTION_PAYPAL_FORM', 'paypal.standard.forms.PayPalPaymentsForm')
@@ -86,62 +86,68 @@ def _paypal_form  (subscription, user, upgrade_subscription=False, **extra_args)
                 custom = user.id,
                 amount=subscription.price))
 
-def subscription_list(request):
-    return direct_to_template(
-        request, template='subscription_list.html',
-        extra_context=dict(
-            object_list = Subscription.objects.all()))
 
-@login_required
-def subscription_detail(request, object_id, payment_method="standard"):
-    s = get_object_or_404(Subscription, id=object_id)
+class SubscriptionList(TemplateView):
+    template_name = 'subscription_list.html'
 
-    try:
-        us = request.user.usersubscription_set.get(
-            active=True)
-    except UserSubscription.DoesNotExist:
-        change_denied_reasons = None
-        us = None
-    else:
-        change_denied_reasons = us.try_change(s)
+    def get_context_data(self, **kwargs):
+        return dict(object_list = Subscription.objects.all())
 
-    if change_denied_reasons:
-        form = None
-    else:
-        extra_args = {}
-        get_paypal_extra_args.send(sender=None, user=request.user, subscription=s, extra_args={})
-        form = _paypal_form(s, request.user,
-                            upgrade_subscription=(us is not None) and (us.subscription<>s))
+class SubscriptionDetail(TemplateView):
+    template_name = 'subscription_detail.html'
 
-    try:
-        s_us = request.user.usersubscription_set.get(subscription=s)
-    except UserSubscription.DoesNotExist:
-        s_us = None
-        
-    from subscription.providers import PaymentMethodFactory
-    # See PROPOSALS section in providers.py
-    if payment_method == "pro":
-        domain = Site.objects.get_current().domain
-        item = {"amt": s.price,
-                "inv": "inventory",         # unique tracking variable paypal
-                "custom": "tracking",       # custom tracking variable for you
-                "cancelurl": 'http://%s%s' % (domain, reverse('subscription_cancel')),  # Express checkout cancel url
-                "returnurl": 'http://%s%s' % (domain, reverse('subscription_done'))}  # Express checkout return url
-        
-        data = {"item": item,
-                "payment_template": "payment.html",      # template name for payment
-                "confirm_template": "confirmation.html", # template name for confirmation
-                "success_url": reverse('subscription_done')}              # redirect location after success
-        
-        o = PaymentMethodFactory.factory('WebsitePaymentsPro', data=data, request=request)
-        # We return o.proceed() just because django-paypal's PayPalPro returns HttpResponse object
-        return o.proceed()
-    
-    elif payment_method == 'standard':
-        return direct_to_template(request, template='subscription_detail.html',\
-                                  extra_context=dict(object=s, usersubscription=s_us,\
-                                  change_denied_reasons=change_denied_reasons,\
-                                  form=form, cancel_url=cancel_url))
-    else:
-        #should never get here
-        raise Http404
+    def get(self, **kwargs):
+        from subscription.providers import PaymentMethodFactory
+        # See PROPOSALS section in providers.py
+        if payment_method == "pro":
+            domain = Site.objects.get_current().domain
+            item = {"amt": s.price,
+                    "inv": "inventory",         # unique tracking variable paypal
+                    "custom": "tracking",       # custom tracking variable for you
+                    "cancelurl": 'http://%s%s' % (domain, reverse('subscription_cancel')),  # Express checkout cancel url
+                    "returnurl": 'http://%s%s' % (domain, reverse('subscription_done'))}  # Express checkout return url
+
+            data = {"item": item,
+                    "payment_template": "payment.html",      # template name for payment
+                    "confirm_template": "confirmation.html", # template name for confirmation
+                    "success_url": reverse('subscription_done')}              # redirect location after success
+
+            o = PaymentMethodFactory.factory('WebsitePaymentsPro', data=data, request=request)
+            # We return o.proceed() just because django-paypal's PayPalPro returns HttpResponse object
+            return o.proceed()
+
+
+
+    def get_context_data(self, **kwargs):
+        object_id = self.kwargs['object_id']
+        payment_method = self.kwargs['payment_method']
+        s = get_object_or_404(Subscription, id=object_id)
+        try:
+            us = request.user.usersubscription_set.get(
+                active=True)
+        except UserSubscription.DoesNotExist:
+            change_denied_reasons = None
+            us = None
+        else:
+            change_denied_reasons = us.try_change(s)
+
+        if change_denied_reasons:
+            form = None
+        else:
+            extra_args = {}
+            get_paypal_extra_args.send(sender=None, user=request.user, subscription=s, extra_args={})
+            form = _paypal_form(s, request.user,
+                                upgrade_subscription=(us is not None) and (us.subscription<>s))
+
+        try:
+            s_us = request.user.usersubscription_set.get(subscription=s)
+        except UserSubscription.DoesNotExist:
+            s_us = None
+
+        if payment_method == 'standard':
+            return dict(object=s, usersubscription=s_us,
+                        change_denied_reasons=change_denied_reasons,
+                        form=form, cancel_url=cancel_url)
+        else:
+            #should never get here
+            raise Http404
