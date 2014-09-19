@@ -3,8 +3,10 @@ import datetime
 from django.conf import settings
 from django.db import models
 from django.contrib import auth
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext as _, ungettext, ugettext_lazy
+from django.db.models.signals import class_prepared
 
 import paypal.standard.ipn.models as ipn_models
 import paypal.standard.ipn.signals as ipn_signals
@@ -16,7 +18,7 @@ import utils
 class Transaction(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, editable=False)
     subscription = models.ForeignKey('subscription.Subscription', null=True, blank=True, editable=False)
-    user = models.ForeignKey(User, null=True, blank=True, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, editable=False)
     ipn = models.ForeignKey(ipn_models.PayPalIPN, null=True, blank=True, editable=False)
     event = models.CharField(max_length=100, editable=False)
     amount = models.DecimalField(max_digits=64, decimal_places=2, null=True, blank=True, editable=False)
@@ -113,19 +115,6 @@ class Subscription(models.Model):
         else:
             return _("No trial")
 
-# add User.get_subscription() method
-
-
-def __user_get_subscription(user):
-    if not hasattr(user, '_subscription_cache'):
-        sl = Subscription.objects.filter(group__in=user.groups.all())[:1]
-        if sl:
-            user._subscription_cache = sl[0]
-        else:
-            user._subscription_cache = None
-    return user._subscription_cache
-User.add_to_class('get_subscription', __user_get_subscription)
-
 
 class ActiveUSManager(models.Manager):
     """Custom Manager for UserSubscription that returns only live US objects."""
@@ -134,7 +123,7 @@ class ActiveUSManager(models.Manager):
 
 
 class UserSubscription(models.Model):
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL)
     subscription = models.ForeignKey(Subscription)
     expires = models.DateField(null=True, default=datetime.date.today)
     active = models.BooleanField(default=True)
