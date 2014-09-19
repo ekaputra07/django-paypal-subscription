@@ -11,6 +11,8 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.views.generic.list import ListView
 from django.views.generic.base import TemplateView
 from django.dispatch import Signal
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 
 _formclass = getattr(settings, 'SUBSCRIPTION_PAYPAL_FORM', 'paypal.standard.forms.PayPalPaymentsForm')
 _formclass_dot = _formclass.rindex('.')
@@ -93,10 +95,16 @@ class SubscriptionList(TemplateView):
     def get_context_data(self, **kwargs):
         return dict(object_list = Subscription.objects.all())
 
+
 class SubscriptionDetail(TemplateView):
     template_name = 'subscription_detail.html'
 
-    def get(self, **kwargs):
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(SubscriptionDetail, self).dispatch(*args, **kwargs)
+
+    def get(self, request, object_id, **kwargs):
+        payment_method = kwargs.get('payment_method', 'standard')
         from subscription.providers import PaymentMethodFactory
         # See PROPOSALS section in providers.py
         if payment_method == "pro":
@@ -115,10 +123,12 @@ class SubscriptionDetail(TemplateView):
             o = PaymentMethodFactory.factory('WebsitePaymentsPro', data=data, request=request)
             # We return o.proceed() just because django-paypal's PayPalPro returns HttpResponse object
             return o.proceed()
+        return super(SubscriptionDetail, self).get(self, request, object_id, **kwargs)
 
     def get_context_data(self, **kwargs):
         object_id = self.kwargs['object_id']
-        payment_method = self.kwargs['payment_method']
+        payment_method = self.kwargs.get('payment_method', 'standard')
+        request = self.request
         s = get_object_or_404(Subscription, id=object_id)
         try:
             us = request.user.usersubscription_set.get(

@@ -7,16 +7,16 @@ from django.contrib.auth.decorators import login_required
 import views
 
 urlpatterns = [
-    url(r'^$', views.SubscriptionList.as_view()),
-    url(r'^(?P<object_id>\d+)/$', login_required(views.SubscriptionDetail.as_view())),
-    url(r'^(?P<object_id>\d+)/(?P<payment_method>(standard|pro))$', login_required(views.SubscriptionDetail.as_view())),
+    url(r'^$', views.SubscriptionList.as_view(), name='subscription_list'),
+    url(r'^(?P<object_id>\d+)/$', views.SubscriptionDetail.as_view(), name='subscription_detail'),
+    url(r'^(?P<object_id>\d+)/(?P<payment_method>(standard|pro))$', login_required(views.SubscriptionDetail.as_view()), name='subscription_detail'),
     ]
 
 urlpatterns += [
     url(r'^paypal/', include('paypal.standard.ipn.urls')),
-    url(r'^done/', TemplateView.as_view(template_name='subscription_done.html')),
-    url(r'^change-done/', views.SubscriptionChangeDone.as_view()),
-    url(r'^cancel/', TemplateView.as_view(template_name='subscription_cancel.html')),
+    url(r'^done/', TemplateView.as_view(template_name='subscription_done.html'), name='subscription_done'),
+    url(r'^change-done/', views.SubscriptionChangeDone.as_view(), name='subscription_change_done'),
+    url(r'^cancel/', TemplateView.as_view(template_name='subscription_cancel.html'), name='subscription_cancel'),
 ]
 
 
