@@ -1,5 +1,6 @@
 from django.conf.urls import url, include
 from django.contrib.auth import get_user_model
+from django.views.generic.base import TemplateView
 from django.contrib.auth.decorators import login_required
 
 
@@ -11,12 +12,12 @@ urlpatterns = [
     url(r'^(?P<object_id>\d+)/(?P<payment_method>(standard|pro))$', login_required(views.SubscriptionDetail.as_view())),
     ]
 
-urlpatterns += ['',
+urlpatterns += [
     url(r'^paypal/', include('paypal.standard.ipn.urls')),
-    url(r'^done/', 'django.views.generic.simple.direct_to_template', dict(template='subscription_done.html'), 'subscription_done'),
-    url(r'^change-done/', 'django.views.generic.simple.direct_to_template', dict(template='subscription_change_done.html', extra_context=dict(cancel_url=views.cancel_url)), 'subscription_change_done'),
-    url(r'^cancel/', 'django.views.generic.simple.direct_to_template', dict(template='subscription_cancel.html'), 'subscription_cancel'),
-    ]
+    url(r'^done/', TemplateView.as_view(template_name='subscription_done.html')),
+    url(r'^change-done/', views.SubscriptionChangeDone.as_view()),
+    url(r'^cancel/', TemplateView.as_view(template_name='subscription_cancel.html')),
+]
 
 
 # HACK: Since we need all models to be loaded and django doesn't provide such

@@ -116,8 +116,6 @@ class SubscriptionDetail(TemplateView):
             # We return o.proceed() just because django-paypal's PayPalPro returns HttpResponse object
             return o.proceed()
 
-
-
     def get_context_data(self, **kwargs):
         object_id = self.kwargs['object_id']
         payment_method = self.kwargs['payment_method']
@@ -151,3 +149,10 @@ class SubscriptionDetail(TemplateView):
         else:
             #should never get here
             raise Http404
+
+
+class SubscriptionChangeDone(TemplateView):
+    template_name = 'subscription_change_done.html'
+
+    def get_context_data(self, **kwargs):
+        return dict(cancel_url=cancel_url)
