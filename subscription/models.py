@@ -125,7 +125,7 @@ class Subscription(models.Model):
         paypal_form.get_paypal_extra_args.send(sender=None, user=user,
                                                subscription=self, extra_args={})
         return paypal_form._paypal_form(self, user,
-                            upgrade_subscription=(us is not None) and (us.subscription!=s))
+                            upgrade_subscription=(us is not None) and (us.subscription!=self))
 
 
 class ActiveUSManager(models.Manager):
@@ -267,6 +267,7 @@ def unsubscribe_expired():
 
 
 def _ipn_usersubscription(payment):
+    User = get_user_model()
     class PseudoUS(object):
         pk = None
 
