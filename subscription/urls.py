@@ -14,9 +14,9 @@ urlpatterns = [
 
 urlpatterns += [
     url(r'^paypal/', include('paypal.standard.ipn.urls')),
-    url(r'^done/', TemplateView.as_view(template_name='subscription_done.html'), name='subscription_done'),
+    url(r'^done/', TemplateView.as_view(template_name='subscription/subscription_done.html'), name='subscription_done'),
     url(r'^change-done/', views.SubscriptionChangeDone.as_view(), name='subscription_change_done'),
-    url(r'^cancel/', TemplateView.as_view(template_name='subscription_cancel.html'), name='subscription_cancel'),
+    url(r'^cancel/', TemplateView.as_view(template_name='subscription/subscription_cancel.html'), name='subscription_cancel'),
 ]
 
 

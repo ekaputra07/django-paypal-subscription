@@ -1,0 +1,8 @@
+{% for plan in paypal_forms %}
+    <a href="{% url 'subscription_detail' plan.0.pk %}">{{ plan.0.name }} ({{ plan.0.price }})</a>
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+    {{ plan.1 }}
+    <input type="submit" name="Subscribe" value="Subscribe"/>
+    </form>
+    <hr>
+{% endfor %}

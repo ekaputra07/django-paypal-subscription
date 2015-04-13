@@ -16,7 +16,7 @@ import paypal_form
 from models import Subscription, UserSubscription
 
 class SubscriptionList(TemplateView):
-    template_name = 'subscription_list.html'
+    template_name = 'subscription/subscription_list.html'
 
     def get_context_data(self, **kwargs):
         u = self.request.user
@@ -28,7 +28,7 @@ class SubscriptionList(TemplateView):
 
 
 class SubscriptionDetail(TemplateView):
-    template_name = 'subscription_detail.html'
+    template_name = 'subscription/subscription_detail.html'
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
@@ -89,7 +89,7 @@ class SubscriptionDetail(TemplateView):
 
 
 class SubscriptionChangeDone(TemplateView):
-    template_name = 'subscription_change_done.html'
+    template_name = 'subscription/subscription_change_done.html'
 
     def get_context_data(self, **kwargs):
         return dict(cancel_url=cancel_url)
